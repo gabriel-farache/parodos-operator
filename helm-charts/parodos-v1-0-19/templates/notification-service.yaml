@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "parodos-v1-0-19.fullname" . }}-notification-service
+  labels:
+  {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.notificationService.type }}
+  selector:
+    app: notification-service
+  {{- include "parodos-v1-0-19.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.notificationService.ports | toYaml | nindent 2 -}}

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "parodos-v1-0-19.fullname" . }}-postgres-pvc
+  labels:
+  {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pvc.postgresPvc.storageRequest | quote }}
