@@ -361,9 +361,9 @@ Results:
                 Loaded 2 Custom Resources from alm-examples
 ```
 
-You can now fork https://github.com/k8s-operatorhub/community-operators/ then
+You can now fork https://github.com/k8s-operatorhub/community-operators then
 * create a new folder in `operators/parodos-operator` with the new operator's version as name (ie: 0.0.1)
 * copy the folder `bundle` previously generated into the newly created folder
 * commit the changes and push them
     * you need to sign the commit: https://github.com/operator-framework/community-operators/blob/master/docs/contributing-prerequisites.md#sign-your-work
-* create a PR to have the new operator version available on OperatorHub
+* create a PR (see [guildines](https://github.com/operator-framework/community-operators/blob/master/docs/contributing-via-pr.md) to have the new operator version available on OperatorHub
