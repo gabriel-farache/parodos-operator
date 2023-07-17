@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-workflow-service
+  name: workflow-service
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 spec:

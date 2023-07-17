@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-backstage
+  name: backstage
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 spec:
@@ -27,7 +27,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "parodos-v1-0-19.fullname" . }}-postgres-secrets-th27274644
+            name: postgres-secrets-th27274644
         image: {{ .Values.backstage.backstage.image.repository }}:{{ .Values.backstage.backstage.image.tag
           | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.backstage.backstage.imagePullPolicy }}
@@ -45,13 +45,13 @@ spec:
           subPath: app-config.yaml
       volumes:
       - configMap:
-          name: {{ include "parodos-v1-0-19.fullname" . }}-app-config-4gh2b9ghf4
+          name: app-config-4gh2b9ghf4
         name: app-config
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-notification-service
+  name: notification-service
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 spec:
@@ -71,7 +71,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - configMapRef:
-            name: {{ include "parodos-v1-0-19.fullname" . }}-notification-service-config
+            name: notification-service-config
         image: {{ .Values.notificationService.notificationService.image.repository }}:{{
           .Values.notificationService.notificationService.image.tag | default .Chart.AppVersion
           }}
@@ -93,7 +93,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-postgres
+  name: postgres
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 spec:
@@ -114,7 +114,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - secretRef:
-            name: {{ include "parodos-v1-0-19.fullname" . }}-postgres-secrets-th27274644
+            name: postgres-secrets-th27274644
         image: {{ .Values.postgres.postgres.image.repository }}:{{ .Values.postgres.postgres.image.tag
           | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.postgres.postgres.imagePullPolicy }}
@@ -140,12 +140,12 @@ spec:
       volumes:
       - name: storage
         persistentVolumeClaim:
-          claimName: {{ include "parodos-v1-0-19.fullname" . }}-postgres-pvc
+          claimName: postgres-pvc
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-workflow-service
+  name: workflow-service
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 spec:
@@ -165,7 +165,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         envFrom:
         - configMapRef:
-            name: {{ include "parodos-v1-0-19.fullname" . }}-config
+            name: config
         image: {{ .Values.workflowService.workflowService.image.repository }}:{{ .Values.workflowService.workflowService.image.tag
           | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.workflowService.workflowService.imagePullPolicy }}

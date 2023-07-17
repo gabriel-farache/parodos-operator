@@ -53,7 +53,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.30.0
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/parodos-dev/parodos-operator:latest
+IMG ?= quay.io/parodos-dev/parodos-operator:v${PARODOS_VERSION}
 
 .PHONY: all
 all: docker-build
@@ -259,23 +259,24 @@ download-manifest:
 generate-helmchart: helmify
 	cat manifests.yaml | helmify helm-charts/parodos-v${PARODOS_VERSION_DNS} ;\
 	echo "fullnameOverride: parodos-v${PARODOS_VERSION_DNS}" >> helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml ;\
-	sed -i 's/http:\/\/notification-service:/http:\/\/PARODOS_FULLNAME-notification-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/http:\/\/workflow-service:/http:\/\/PARODOS_FULLNAME-workflow-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/host: postgres/host: PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/toYaml/replace "PARODOS_FULLNAME" .Values.fullnameOverride | toYaml/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/app-config-4gh2b9ghf4.yaml  ;\
-	sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/notification-service-config.yaml  ;\
-	sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/config.yaml  ;\
+	find helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/*.yaml -type f -exec sed -i "s/{{ include \"parodos-v${PARODOS_VERSION_DNS}.fullname\" . }}-//g" {} \; 
+	#sed -i 's/http:\/\/notification-service:/http:\/\/PARODOS_FULLNAME-notification-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/http:\/\/workflow-service:/http:\/\/PARODOS_FULLNAME-workflow-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/host: postgres/host: PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/toYaml/replace "PARODOS_FULLNAME" .Values.fullnameOverride | toYaml/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/app-config-4gh2b9ghf4.yaml  ;\
+	#sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/notification-service-config.yaml  ;\
+	#sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/config.yaml  ;\
 	sed -i 's/pgdata: ""/pgdata: "\/var\/lib\/postgresql\/data\/mydata"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
 	sed -i 's/postgresDb: ""/postgresDb: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
 	sed -i 's/postgresPassword: ""/postgresPassword: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
 	sed -i 's/postgresUser: ""/postgresUser: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/tag: v1.0.19-openshift/tag: latest-openshift/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/postgresql:\/\/postgres/postgresql:\/\/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/$${POSTGRES_SERVICE_HOST}/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/tag: v1.0.19-openshift/tag: latest-openshift/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/postgresql:\/\/postgres/postgresql:\/\/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
+	#sed -i 's/$${POSTGRES_SERVICE_HOST}/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
 	chmod -R +r helm-charts ;\
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)
 
 clean:
-	rm -rf config Dockerfile PROJECT watches.yaml && mv Makefile Makefile_cpy && rm -rf Makefile
+	rm -rf config Dockerfile bundle.Dockerfile PROJECT watches.yaml bundle && mv Makefile Makefile_cpy && rm -rf Makefile

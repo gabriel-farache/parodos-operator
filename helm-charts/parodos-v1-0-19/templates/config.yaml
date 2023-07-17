@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "parodos-v1-0-19.fullname" . }}-config
+  name: config
   labels:
   {{- include "parodos-v1-0-19.labels" . | nindent 4 }}
 data:
   DATASOURCE_DRIVER: {{ .Values.config.datasourceDriver | quote }}
   DATASOURCE_PASSWORD: {{ .Values.config.datasourcePassword | quote }}
-  DATASOURCE_URL: {{ .Values.config.datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride | quote }}
+  DATASOURCE_URL: {{ .Values.config.datasourceUrl | quote }}
   DATASOURCE_USERNAME: {{ .Values.config.datasourceUsername | quote }}
   NOTIFICATION_SERVER_ADDRESS: {{ .Values.config.notificationServerAddress | quote
     }}

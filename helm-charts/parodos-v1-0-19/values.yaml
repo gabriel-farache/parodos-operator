@@ -32,7 +32,7 @@ appConfig4Gh2B9Ghf4:
       database:
         client: pg
         connection:
-          host: PARODOS_FULLNAME-postgres
+          host: ${POSTGRES_SERVICE_HOST}
           port: 5432
           user: parodos
           password: parodos
@@ -56,7 +56,7 @@ appConfig4Gh2B9Ghf4:
       #   target: 'https://example.com'
       #   changeOrigin: true
       '/parodos':
-        target: 'http://PARODOS_FULLNAME-workflow-service:8080/api/v1'
+        target: 'http://workflow-service:8080/api/v1'
         changeOrigin: true
         redirect: follow
         cache: 'no-cache'
@@ -65,7 +65,7 @@ appConfig4Gh2B9Ghf4:
           accept: 'application/json'
           Authorization: 'Basic dGVzdDp0ZXN0'
       '/parodos-notifications':
-        target: 'http://PARODOS_FULLNAME-notification-service:8080/api/v1'
+        target: 'http://notification-service:8080/api/v1'
         changeOrigin: true
         redirect: follow
         cache: 'no-cache'
@@ -120,7 +120,7 @@ backstage:
   backstage:
     image:
       repository: quay.io/parodos-dev/backstage-parodos
-      tag: latest-openshift
+      tag: v1.0.19-openshift
     imagePullPolicy: Always
   ports:
   - name: backend
@@ -131,7 +131,7 @@ backstage:
 config:
   datasourceDriver: org.postgresql.Driver
   datasourcePassword: parodos
-  datasourceUrl: jdbc:postgresql://PARODOS_FULLNAME-postgres:5432/parodos
+  datasourceUrl: jdbc:postgresql://postgres:5432/parodos
   datasourceUsername: parodos
   notificationServerAddress: notification-service
   springProfilesActive: local
@@ -149,7 +149,7 @@ notificationService:
 notificationServiceConfig:
   datasourceDriver: org.postgresql.Driver
   datasourcePassword: parodos
-  datasourceUrl: jdbc:postgresql://PARODOS_FULLNAME-postgres:5432/parodos
+  datasourceUrl: jdbc:postgresql://postgres:5432/parodos
   datasourceUsername: parodos
   springProfilesActive: local
 postgres:
