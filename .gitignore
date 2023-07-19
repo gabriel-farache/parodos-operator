@@ -13,3 +13,12 @@ bin
 *.swo
 *~
 manifests.yaml
+bundle
+Dockerfile
+bundle.Dockerfile
+Makefile
+PROJECT
+watches.yaml
+config
+0.*
+1.*

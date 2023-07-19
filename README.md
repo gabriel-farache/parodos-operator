@@ -2,6 +2,13 @@
 
 
 ## Creation
+You can either do
+```bash
+make -f Makefile_cpy init
+```
+
+Or 
+
 ```bash
  make -f Makefile_cpy download-manifest generate-helmchart 
 ```
@@ -15,21 +22,127 @@ This will create the folder helm-charts/parodos-{PARODOS_VERSION_DNS}. We have t
 
 Then, 
 ```bash
-$ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
-Writing kustomize manifests for you to edit...
-Creating the API:
-$ operator-sdk create api --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
-Writing kustomize manifests for you to edit...
-Created helm-charts/parodos-v1-0-19
-Generating RBAC rules
-WARN[0000] Using default RBAC rules: failed to generate RBAC rules: failed to get server resources: Get "https://127.0.0.1:46431/api?timeout=32s": dial tcp 127.0.0.1:46431: connect: connection refused 
+$ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19 && cp Makefile_cpy Makefile
+    Writing kustomize manifests for you to edit...
+    Creating the API:
+    $ operator-sdk create api --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
+    Writing kustomize manifests for you to edit...
+    Created helm-charts/parodos-v1-0-19
+    Generating RBAC rules
+    WARN[0000] Using default RBAC rules: failed to generate RBAC rules: failed to get server resources: Get "https://127.0.0.1:46431/api?timeout=32s": dial tcp 127.0.0.1:46431: connect: connection refused 
 ```
 
 ## Deploy
+### Single target
+You can either execute `make kind_deploy`
+```bash
+$ make kind_deploy
+kind create cluster --name parodos-v1-0-19
+Creating cluster "parodos-v1-0-19" ...
+ ✓ Ensuring node image (kindest/node:v1.25.3) 🖼
+ ✓ Preparing nodes 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+Set kubectl context to "kind-parodos-v1-0-19"
+You can now use your cluster with:
 
+kubectl cluster-info --context kind-parodos-v1-0-19
+
+Not sure what to do next? 😅  Check out https://kind.sigs.k8s.io/docs/user/quick-start/
+sudo sysctl fs.inotify.max_user_watches=524288
+Place your finger on the fingerprint reader
+fs.inotify.max_user_watches = 524288
+sudo sysctl fs.inotify.max_user_instances=512
+fs.inotify.max_user_instances = 512
+docker build -t quay.io/parodos-dev/parodos-operator:v1.0.19 .
+[+] Building 0.8s (9/9) FINISHED                                                                                                                             
+ => [internal] load .dockerignore                                                                                                                       0.1s
+ => => transferring context: 2B                                                                                                                         0.0s
+ => [internal] load build definition from Dockerfile                                                                                                    0.0s
+ => => transferring dockerfile: 233B                                                                                                                    0.0s
+ => [internal] load metadata for quay.io/operator-framework/helm-operator:v1.30.0                                                                       0.6s
+ => [1/4] FROM quay.io/operator-framework/helm-operator:v1.30.0@sha256:e82703bd9ce640b048c00d0c2e860d784cd0c5bfb724869c1aba85e92a13ce58                 0.0s
+ => [internal] load build context                                                                                                                       0.0s
+ => => transferring context: 1.20kB                                                                                                                     0.0s
+ => CACHED [2/4] COPY watches.yaml /opt/helm/watches.yaml                                                                                               0.0s
+ => CACHED [3/4] COPY helm-charts  /opt/helm/helm-charts                                                                                                0.0s
+ => CACHED [4/4] WORKDIR /opt/helm                                                                                                                      0.0s
+ => exporting to image                                                                                                                                  0.0s
+ => => exporting layers                                                                                                                                 0.0s
+ => => writing image sha256:b7aef943fdf67bd166c41c2a3a1038a5e4806c104a11f3dd25df30d055ba0c84                                                            0.0s
+ => => naming to quay.io/parodos-dev/parodos-operator:v1.0.19                                                                                           0.0s
+docker push quay.io/parodos-dev/parodos-operator:v1.0.19
+The push refers to repository [quay.io/parodos-dev/parodos-operator]
+5f70bf18a086: Layer already exists 
+784e9b92b0c0: Layer already exists 
+cf8333ebf2f5: Layer already exists 
+9c9e5071d24a: Layer already exists 
+f10ab75b4fc1: Layer already exists 
+0d5fc27d682c: Layer already exists 
+14946186767b: Layer already exists 
+v1.0.19: digest: sha256:f03e402213488b44e2279210177541fc2b0e737f2661596537b98961439fe0dc size: 1776
+/home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/parodos.charts.redhat.com created
+cd config/manager && /home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize edit set image controller=quay.io/parodos-dev/parodos-operator:v1.0.19
+/home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize build config/default | kubectl apply -f -
+namespace/parodos-operator-system created
+customresourcedefinition.apiextensions.k8s.io/parodos.charts.redhat.com unchanged
+serviceaccount/parodos-operator-controller-manager created
+role.rbac.authorization.k8s.io/parodos-operator-leader-election-role created
+clusterrole.rbac.authorization.k8s.io/parodos-operator-manager-role created
+clusterrole.rbac.authorization.k8s.io/parodos-operator-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/parodos-operator-proxy-role created
+rolebinding.rbac.authorization.k8s.io/parodos-operator-leader-election-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/parodos-operator-manager-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/parodos-operator-proxy-rolebinding created
+service/parodos-operator-controller-manager-metrics-service created
+deployment.apps/parodos-operator-controller-manager created
+Deploying Parodos operator sample...
+kubectl -n parodos-operator-system wait pod/$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n parodos-operator-system) --for=condition=Ready --timeout=60s
+pod/parodos-operator-controller-manager-5548fc4ff6-bt94s condition met
+kubectl create namespace local-test || true
+namespace/local-test created
+kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml -n local-test
+parodos.charts.redhat.com/parodos-sample created
+It may take up to 5min for all pods to be ready
+kubectl -n local-test wait pod/$(kubectl get pods -n local-test --no-headers -o custom-columns=":metadata.name" -l app=postgres) --for=condition=Ready --timeout=300s
+pod/postgres-6dcfdf7b58-rwvtw condition met
+kubectl -n local-test wait pod/$(kubectl get pods -n local-test --no-headers -o custom-columns=":metadata.name" -l app=backstage) --for=condition=Ready --timeout=300s
+pod/backstage-7f78dbdc5f-6jz45 condition met
+kubectl -n local-test wait pod/$(kubectl get pods -n local-test --no-headers -o custom-columns=":metadata.name" -l app=workflow-service) --for=condition=Ready --timeout=300s
+pod/workflow-service-97697495b-bdckq condition met
+kubectl -n local-test wait pod/$(kubectl get pods -n local-test --no-headers -o custom-columns=":metadata.name" -l app=notification-service) --for=condition=Ready --timeout=300s
+pod/notification-service-64bc65f7c9-czq72 condition met
+All set!
+Run 'kubectl -n local-test port-forward backstage-7f78dbdc5f-6jz45 7007:7007 &' to access backstage UId
+```
+
+or follow the step by step instructions
+### Multiple targets
 To push the docker image
 ```bash
 make docker-build docker-push
+```
+
+Let's create a local K8S cluster with minikube:
+```bash
+$ make kind_create 
+kind create cluster --name parodos-v1-0-19
+Creating cluster "parodos-v1-0-19" ...
+ ✓ Ensuring node image (kindest/node:v1.25.3) 🖼
+ ✓ Preparing nodes 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+Set kubectl context to "kind-parodos-v1-0-19"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-parodos-v1-0-19
+
+Have a nice day! 👋
 ```
 
 Then, 
@@ -69,6 +182,12 @@ Handling connection for 7007
 
 You should be able to access `http://localhost:7007/` with `test/test` credentials.
 
+To test, you can also run
+```bash
+kubectl port-forward backstage-7f78dbdc5f-dr5cl 7007:7007 &
+make test_deploy
+```
+
 ## Push to OperatorHub
 
 ### Create the bundle
@@ -79,34 +198,27 @@ First, we need to create a bundle, see https://sdk.operatorframework.io/docs/olm
 
 Make sure to update the `VERSION` in the Makefile or to export it first
 ```bash
-make bundle
+$ make bundle
+cp -r bundle_manifests/* config/manifests/.
 /usr/local/bin/operator-sdk generate kustomize manifests -q
-
-Display name for the operator (required): 
-> Parodos Operator
-
-Description for the operator (required): 
-> Parodos controller to create parodos environment
-
-Provider's name for the operator (required): 
-> parodos-dev
-
-Any relevant URL for the provider name (optional): 
-> https://github.com/parodos-dev
-
-Comma-separated list of keywords for your operator (required): 
-> parodos,postgresql,backstage
-
-Comma-separated list of maintainers and their emails (e.g. 'name1:email1, name2:email2') (required): 
-> gabriel:gfarache@redhat.com,gloria:gciavarr@redhat.com,richard:ricwang@redhat.com,annel:aketcha@redhat.com                       
-cd config/manager && /home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize edit set image controller=quay.io/parodos-dev/parodos-operator:latest
-/home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize build config/manifests | /usr/local/bin/operator-sdk generate bundle -q --overwrite --version 0.0.1  
+cd config/manager && /home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize edit set image controller=quay.io/parodos-dev/parodos-operator:v1.0.19
+/home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize build config/manifests | /usr/local/bin/operator-sdk generate bundle -q --overwrite --version 0.0.3  
 INFO[0000] Creating bundle.Dockerfile                   
 INFO[0000] Creating bundle/metadata/annotations.yaml    
 INFO[0000] Bundle metadata generated successfully       
 /usr/local/bin/operator-sdk bundle validate ./bundle
 INFO[0000] All validation tests have completed successfully 
+Completing CSV...
+/usr/local/bin/operator-sdk bundle validate ./bundle
+INFO[0000] All validation tests have completed successfully 
+Bundle ready
 ```
+
+Note that you are not prompted anything as the requested values are already saved in `bundle_manifests` folder and that folder is automatically moved into `config/manifests`.
+
+The `bundle` target is also doing the following automatically, no need to do it, it's kept there in order to keep history.
+
+#### Steps done automatically by `make bundle` (no need to execute)
 
 Then open `bundle/manifests/parodos-operator.clusterserviceversion.yaml` and 
 * add the following in `metadata.annotations`:
@@ -161,7 +273,296 @@ You can now test it by following: https://k8s-operatorhub.github.io/community-op
 
 Here we will mostly leverage `operator sdk`
 
-#### Static tests
+You can either run `make prepare_push_to_operatorhub` from this repo and then copy the generated folder into your fork or follow the step by step instructions below.
+
+```bash
+$ make prepare_push_to_operatorhub
+cp -r bundle/* 0.0.3/.
+cp bundle.Dockerfile 0.0.3/.
+sed -i 's/bundle\///g' 0.0.3/bundle.Dockerfile
+operator-sdk bundle validate 0.0.3 --select-optional suite=operatorframework || operator-sdk bundle validate 0.0.3 --select-optional suite=operatorframework
+INFO[0000] All validation tests have completed successfully 
+operator-sdk scorecard 0.0.3 || true
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test olm-spec-descriptors]
+Labels:
+        "suite":"olm"
+        "test":"olm-spec-descriptors-test"
+Results:
+        Name: olm-spec-descriptors
+        State: fail
+
+        Suggestions:
+                Add a spec descriptor for postgres
+                Add a spec descriptor for pvc
+                Add a spec descriptor for appConfig4Gh2B9Ghf4
+                Add a spec descriptor for backstage
+                Add a spec descriptor for kubernetesClusterDomain
+                Add a spec descriptor for notificationService
+                Add a spec descriptor for notificationServiceConfig
+                Add a spec descriptor for config
+                Add a spec descriptor for postgresSecretsTh27274644
+                Add a spec descriptor for workflowService
+        Errors:
+                postgres does not have a spec descriptor
+                pvc does not have a spec descriptor
+                appConfig4Gh2B9Ghf4 does not have a spec descriptor
+                backstage does not have a spec descriptor
+                kubernetesClusterDomain does not have a spec descriptor
+                notificationService does not have a spec descriptor
+                notificationServiceConfig does not have a spec descriptor
+                config does not have a spec descriptor
+                postgresSecretsTh27274644 does not have a spec descriptor
+                workflowService does not have a spec descriptor
+        Log:
+                Loaded ClusterServiceVersion: parodos-operator.v0.0.3
+                Loaded 1 Custom Resources from alm-examples
+
+
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test olm-crds-have-validation]
+Labels:
+        "suite":"olm"
+        "test":"olm-crds-have-validation-test"
+Results:
+        Name: olm-crds-have-validation
+        State: fail
+
+        Suggestions:
+                Add CRD validation for spec field `pvc` in Parodos/v1alpha1
+                Add CRD validation for spec field `workflowService` in Parodos/v1alpha1
+                Add CRD validation for spec field `appConfig4Gh2B9Ghf4` in Parodos/v1alpha1
+                Add CRD validation for spec field `config` in Parodos/v1alpha1
+                Add CRD validation for spec field `kubernetesClusterDomain` in Parodos/v1alpha1
+                Add CRD validation for spec field `notificationService` in Parodos/v1alpha1
+                Add CRD validation for spec field `postgres` in Parodos/v1alpha1
+                Add CRD validation for spec field `backstage` in Parodos/v1alpha1
+                Add CRD validation for spec field `notificationServiceConfig` in Parodos/v1alpha1
+                Add CRD validation for spec field `postgresSecretsTh27274644` in Parodos/v1alpha1
+        Log:
+                Loaded 1 Custom Resources from alm-examples
+                Loaded CustomresourceDefinitions: [&CustomResourceDefinition{ObjectMeta:{parodos.charts.redhat.com      0 0001-01-01 00:00:00 +0000 UTC <nil> <nil> map[] map[] [] [] []},Spec:CustomResourceDefinitionSpec{Group:charts.redhat.com,Names:CustomResourceDefinitionNames{Plural:parodos,Singular:parodos,ShortNames:[],Kind:Parodos,ListKind:ParodosList,Categories:[],},Scope:Namespaced,Versions:[]CustomResourceDefinitionVersion{CustomResourceDefinitionVersion{Name:v1alpha1,Served:true,Storage:true,Schema:&CustomResourceValidation{OpenAPIV3Schema:&JSONSchemaProps{ID:,Schema:,Ref:nil,Description:Parodos is the Schema for the parodos API,Type:object,Format:,Title:,Default:nil,Maximum:nil,ExclusiveMaximum:false,Minimum:nil,ExclusiveMinimum:false,MaxLength:nil,MinLength:nil,Pattern:,MaxItems:nil,MinItems:nil,UniqueItems:false,MultipleOf:nil,Enum:[]JSON{},MaxProperties:nil,MinProperties:nil,Required:[],Items:nil,AllOf:[]JSONSchemaProps{},OneOf:[]JSONSchemaProps{},AnyOf:[]JSONSchemaProps{},Not:nil,Properties:map[string]JSONSchemaProps{apiVersion: {  <nil> APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources string   nil <nil> false <nil> false <nil> <nil>  <nil> <nil> false <nil> [] <nil> <nil> [] nil [] [] [] nil map[] nil map[] map[] nil map[] nil nil false <nil> false false [] <nil> <nil> []},kind: {  <nil> Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds string   nil <nil> false <nil> false <nil> <nil>  <nil> <nil> false <nil> [] <nil> <nil> [] nil [] [] [] nil map[] nil map[] map[] nil map[] nil nil false <nil> false false [] <nil> <nil> []},metadata: {  <nil>  object   nil <nil> false <nil> false <nil> <nil>  <nil> <nil> false <nil> [] <nil> <nil> [] nil [] [] [] nil map[] nil map[] map[] nil map[] nil nil false <nil> false false [] <nil> <nil> []},spec: {  <nil> Spec defines the desired state of Parodos object   nil <nil> false <nil> false <nil> <nil>  <nil> <nil> false <nil> [] <nil> <nil> [] nil [] [] [] nil map[] nil map[] map[] nil map[] nil nil false 0xc0007d28b0 false false [] <nil> <nil> []},status: {  <nil> Status defines the observed state of Parodos object   nil <nil> false <nil> false <nil> <nil>  <nil> <nil> false <nil> [] <nil> <nil> [] nil [] [] [] nil map[] nil map[] map[] nil map[] nil nil false 0xc0007d28b1 false false [] <nil> <nil> []},},AdditionalProperties:nil,PatternProperties:map[string]JSONSchemaProps{},Dependencies:JSONSchemaDependencies{},AdditionalItems:nil,Definitions:JSONSchemaDefinitions{},ExternalDocs:nil,Example:nil,Nullable:false,XPreserveUnknownFields:nil,XEmbeddedResource:false,XIntOrString:false,XListMapKeys:[],XListType:nil,XMapType:nil,XValidations:[]ValidationRule{},},},Subresources:&CustomResourceSubresources{Status:&CustomResourceSubresourceStatus{},Scale:nil,},AdditionalPrinterColumns:[]CustomResourceColumnDefinition{},Deprecated:false,DeprecationWarning:nil,},},Conversion:nil,PreserveUnknownFields:false,},Status:CustomResourceDefinitionStatus{Conditions:[]CustomResourceDefinitionCondition{},AcceptedNames:CustomResourceDefinitionNames{Plural:,Singular:,ShortNames:[],Kind:,ListKind:,Categories:[],},StoredVersions:[],},}]
+
+
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test olm-bundle-validation]
+Labels:
+        "suite":"olm"
+        "test":"olm-bundle-validation-test"
+Results:
+        Name: olm-bundle-validation
+        State: pass
+
+        Log:
+                time="2023-07-20T12:33:36Z" level=debug msg="Found manifests directory" name=bundle-test
+                time="2023-07-20T12:33:36Z" level=debug msg="Found metadata directory" name=bundle-test
+                time="2023-07-20T12:33:36Z" level=debug msg="Getting mediaType info from manifests directory" name=bundle-test
+                time="2023-07-20T12:33:36Z" level=debug msg="Found annotations file" name=bundle-test
+                time="2023-07-20T12:33:36Z" level=debug msg="Could not find optional dependencies file" name=bundle-test
+
+
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test olm-status-descriptors]
+Labels:
+        "suite":"olm"
+        "test":"olm-status-descriptors-test"
+Results:
+        Name: olm-status-descriptors
+        State: pass
+
+        Suggestions:
+                parodos.charts.redhat.com does not have status spec. Note thatAll objects that represent a physical resource whose state may vary from the user's desired intent SHOULD have a spec and a status. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+        Log:
+                Loaded ClusterServiceVersion: parodos-operator.v0.0.3
+                Loaded 1 Custom Resources from alm-examples
+
+
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test olm-crds-have-resources]
+Labels:
+        "suite":"olm"
+        "test":"olm-crds-have-resources-test"
+Results:
+        Name: olm-crds-have-resources
+        State: fail
+
+        Errors:
+                Owned CRDs do not have resources specified
+        Log:
+                Loaded ClusterServiceVersion: parodos-operator.v0.0.3
+
+
+--------------------------------------------------------------------------------
+Image:      quay.io/operator-framework/scorecard-test:v1.30.0
+Entrypoint: [scorecard-test basic-check-spec]
+Labels:
+        "suite":"basic"
+        "test":"basic-check-spec-test"
+Results:
+        Name: basic-check-spec
+        State: pass
+
+
+
+kubectl delete pods -l app=scorecard-test
+No resources found
+docker build -f 0.0.3/bundle.Dockerfile -t quay.io/gfarache/parodos:v0.0.3 0.0.3/
+[+] Building 0.1s (7/7) FINISHED                                                                                                                             
+ => [internal] load .dockerignore                                                                                                                       0.0s
+ => => transferring context: 2B                                                                                                                         0.0s
+ => [internal] load build definition from bundle.Dockerfile                                                                                             0.0s
+ => => transferring dockerfile: 954B                                                                                                                    0.0s
+ => [internal] load build context                                                                                                                       0.0s
+ => => transferring context: 24.97kB                                                                                                                    0.0s
+ => CACHED [1/3] COPY manifests /manifests/                                                                                                             0.0s
+ => CACHED [2/3] COPY metadata /metadata/                                                                                                               0.0s
+ => CACHED [3/3] COPY tests/scorecard /tests/scorecard/                                                                                                 0.0s
+ => exporting to image                                                                                                                                  0.0s
+ => => exporting layers                                                                                                                                 0.0s
+ => => writing image sha256:f2b5cd855d0d3ee6273a5319ababa386201af3d74b42224b18193ca89fde570f                                                            0.0s
+ => => naming to quay.io/gfarache/parodos:v0.0.3                                                                                                        0.0s
+docker push quay.io/gfarache/parodos:v0.0.3
+The push refers to repository [quay.io/gfarache/parodos]
+6541beb78fe2: Layer already exists 
+2e50e8de3d07: Layer already exists 
+5a3e566f3b16: Layer already exists 
+v0.0.3: digest: sha256:4cf17b2e8d27361c29d608792f24722b4798854ef097676a95efb5bb0bafe3f4 size: 939
+operator-sdk olm uninstall || true
+INFO[0000] Fetching CRDs for version "v0.25.0"          
+INFO[0000] Fetching resources for resolved version "v0.25.0" 
+INFO[0001] Uninstalling resources for version "v0.25.0" 
+INFO[0001]   Deleting CustomResourceDefinition "catalogsources.operators.coreos.com" 
+INFO[0001]   Deleting CustomResourceDefinition "clusterserviceversions.operators.coreos.com" 
+INFO[0001]   Deleting CustomResourceDefinition "installplans.operators.coreos.com" 
+INFO[0001]   Deleting CustomResourceDefinition "olmconfigs.operators.coreos.com" 
+INFO[0001]   Deleting CustomResourceDefinition "operatorconditions.operators.coreos.com" 
+INFO[0002]   Deleting CustomResourceDefinition "operatorgroups.operators.coreos.com" 
+INFO[0002]   Deleting CustomResourceDefinition "operators.operators.coreos.com" 
+INFO[0002]   Deleting CustomResourceDefinition "subscriptions.operators.coreos.com" 
+INFO[0002]   Deleting Namespace "olm"                   
+INFO[0012]   Deleting Namespace "operators"             
+INFO[0017]   Deleting ServiceAccount "olm/olm-operator-serviceaccount" 
+INFO[0017]     ServiceAccount "olm/olm-operator-serviceaccount" does not exist 
+INFO[0017]   Deleting ClusterRole "system:controller:operator-lifecycle-manager" 
+INFO[0017]   Deleting ClusterRoleBinding "olm-operator-binding-olm" 
+INFO[0017]   Deleting OLMConfig "cluster"               
+INFO[0017]     OLMConfig "cluster" does not exist       
+INFO[0017]   Deleting Deployment "olm/olm-operator"     
+INFO[0017]     Deployment "olm/olm-operator" does not exist 
+INFO[0017]   Deleting Deployment "olm/catalog-operator" 
+INFO[0017]     Deployment "olm/catalog-operator" does not exist 
+INFO[0017]   Deleting ClusterRole "aggregate-olm-edit"  
+INFO[0017]   Deleting ClusterRole "aggregate-olm-view"  
+INFO[0017]   Deleting OperatorGroup "operators/global-operators" 
+INFO[0017]     OperatorGroup "operators/global-operators" does not exist 
+INFO[0017]   Deleting OperatorGroup "olm/olm-operators" 
+INFO[0017]     OperatorGroup "olm/olm-operators" does not exist 
+INFO[0017]   Deleting ClusterServiceVersion "olm/packageserver" 
+INFO[0017]     ClusterServiceVersion "olm/packageserver" does not exist 
+INFO[0017]   Deleting CatalogSource "olm/operatorhubio-catalog" 
+INFO[0017]     CatalogSource "olm/operatorhubio-catalog" does not exist 
+INFO[0017] Successfully uninstalled OLM version "v0.25.0" 
+operator-sdk olm install
+INFO[0000] Fetching CRDs for version "latest"           
+INFO[0000] Fetching resources for resolved version "latest" 
+I0720 14:34:05.379853  259265 request.go:690] Waited for 1.048795192s due to client-side throttling, not priority and fairness, request: GET:https://127.0.0.1:43029/apis/certificates.k8s.io/v1?timeout=32s
+INFO[0006] Creating CRDs and resources                  
+INFO[0006]   Creating CustomResourceDefinition "catalogsources.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "clusterserviceversions.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "installplans.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "olmconfigs.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "operatorconditions.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "operatorgroups.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "operators.operators.coreos.com" 
+INFO[0006]   Creating CustomResourceDefinition "subscriptions.operators.coreos.com" 
+INFO[0006]   Creating Namespace "olm"                   
+INFO[0006]   Creating Namespace "operators"             
+INFO[0006]   Creating ServiceAccount "olm/olm-operator-serviceaccount" 
+INFO[0006]   Creating ClusterRole "system:controller:operator-lifecycle-manager" 
+INFO[0006]   Creating ClusterRoleBinding "olm-operator-binding-olm" 
+INFO[0006]   Creating OLMConfig "cluster"               
+INFO[0008]   Creating Deployment "olm/olm-operator"     
+INFO[0008]   Creating Deployment "olm/catalog-operator" 
+INFO[0008]   Creating ClusterRole "aggregate-olm-edit"  
+INFO[0008]   Creating ClusterRole "aggregate-olm-view"  
+INFO[0008]   Creating OperatorGroup "operators/global-operators" 
+INFO[0008]   Creating OperatorGroup "olm/olm-operators" 
+INFO[0008]   Creating ClusterServiceVersion "olm/packageserver" 
+INFO[0008]   Creating CatalogSource "olm/operatorhubio-catalog" 
+INFO[0008] Waiting for deployment/olm-operator rollout to complete 
+INFO[0008]   Waiting for Deployment "olm/olm-operator" to rollout: 0 of 1 updated replicas are available 
+INFO[0012]   Deployment "olm/olm-operator" successfully rolled out 
+INFO[0012] Waiting for deployment/catalog-operator rollout to complete 
+INFO[0012]   Deployment "olm/catalog-operator" successfully rolled out 
+INFO[0012] Waiting for deployment/packageserver rollout to complete 
+INFO[0012]   Waiting for Deployment "olm/packageserver" to rollout: 0 of 2 updated replicas are available 
+INFO[0015]   Deployment "olm/packageserver" successfully rolled out 
+INFO[0015] Successfully installed OLM version "latest"  
+
+NAME                                            NAMESPACE    KIND                        STATUS
+catalogsources.operators.coreos.com                          CustomResourceDefinition    Installed
+clusterserviceversions.operators.coreos.com                  CustomResourceDefinition    Installed
+installplans.operators.coreos.com                            CustomResourceDefinition    Installed
+olmconfigs.operators.coreos.com                              CustomResourceDefinition    Installed
+operatorconditions.operators.coreos.com                      CustomResourceDefinition    Installed
+operatorgroups.operators.coreos.com                          CustomResourceDefinition    Installed
+operators.operators.coreos.com                               CustomResourceDefinition    Installed
+subscriptions.operators.coreos.com                           CustomResourceDefinition    Installed
+olm                                                          Namespace                   Installed
+operators                                                    Namespace                   Installed
+olm-operator-serviceaccount                     olm          ServiceAccount              Installed
+system:controller:operator-lifecycle-manager                 ClusterRole                 Installed
+olm-operator-binding-olm                                     ClusterRoleBinding          Installed
+cluster                                                      OLMConfig                   Installed
+olm-operator                                    olm          Deployment                  Installed
+catalog-operator                                olm          Deployment                  Installed
+aggregate-olm-edit                                           ClusterRole                 Installed
+aggregate-olm-view                                           ClusterRole                 Installed
+global-operators                                operators    OperatorGroup               Installed
+olm-operators                                   olm          OperatorGroup               Installed
+packageserver                                   olm          ClusterServiceVersion       Installed
+operatorhubio-catalog                           olm          CatalogSource               Installed
+
+operator-sdk run bundle quay.io/gfarache/parodos:v0.0.3
+INFO[0012] Creating a File-Based Catalog of the bundle "quay.io/gfarache/parodos:v0.0.3" 
+INFO[0013] Generated a valid File-Based Catalog         
+INFO[0016] Created registry pod: quay-io-gfarache-parodos-v0-0-3 
+INFO[0016] Created CatalogSource: parodos-operator-catalog 
+INFO[0016] OperatorGroup "operator-sdk-og" created      
+INFO[0016] Created Subscription: parodos-operator-v0-0-3-sub 
+INFO[0028] Approved InstallPlan install-lm45j for the Subscription: parodos-operator-v0-0-3-sub 
+INFO[0028] Waiting for ClusterServiceVersion "default/parodos-operator.v0.0.3" to reach 'Succeeded' phase 
+INFO[0028]   Waiting for ClusterServiceVersion "default/parodos-operator.v0.0.3" to appear 
+INFO[0031]   Found ClusterServiceVersion "default/parodos-operator.v0.0.3" phase: Pending 
+INFO[0033]   Found ClusterServiceVersion "default/parodos-operator.v0.0.3" phase: Installing 
+INFO[0044]   Found ClusterServiceVersion "default/parodos-operator.v0.0.3" phase: Succeeded 
+INFO[0044] OLM has successfully installed "parodos-operator.v0.0.3" 
+kubectl  wait pod/$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep parodos-operator-controller-manager) --for=condition=Ready --timeout=300s
+pod/parodos-operator-controller-manager-cdf9df47c-nht4m condition met
+kubectl create namespace operator-bundle-test || true
+Error from server (AlreadyExists): namespaces "operator-bundle-test" already exists
+kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml -n operator-bundle-test
+parodos.charts.redhat.com/parodos-sample unchanged
+It may take up to 5min for all pods to be ready
+kubectl -n operator-bundle-test wait pod/$(kubectl get pods -n operator-bundle-test --no-headers -o custom-columns=":metadata.name" -l app=postgres | head -n 1) --for=condition=Ready --timeout=300s
+pod/postgres-6dcfdf7b58-6rvw8 condition met
+kubectl -n operator-bundle-test wait pod/$(kubectl get pods -n operator-bundle-test --no-headers -o custom-columns=":metadata.name" -l app=backstage | head -n 1) --for=condition=Ready --timeout=300s
+pod/backstage-7f78dbdc5f-8cvkq condition met
+kubectl -n operator-bundle-test wait pod/$(kubectl get pods -n operator-bundle-test --no-headers -o custom-columns=":metadata.name" -l app=workflow-service | head -n 1) --for=condition=Ready --timeout=300s
+pod/workflow-service-97697495b-2h62v condition met
+kubectl -n operator-bundle-test wait pod/$(kubectl get pods -n operator-bundle-test --no-headers -o custom-columns=":metadata.name" -l app=notification-service | head -n 1) --for=condition=Ready --timeout=300s
+pod/notification-service-64bc65f7c9-lstxs condition met
+Operator bundle prepared and tested successfuly!
+You can now copy 0.0.3 folder into operators/parodos-operator of your fork of https://github.com/k8s-operatorhub/community-operators
+```
+#### Step by step
+
+##### Static tests
 
 From your fork folder of community-operators, in operators/parodos-operator/\<version\>: (here version = 0.0.2)
 
@@ -316,7 +717,7 @@ pod "scorecard-test-zlv8" deleted
 
 To clean the pods list.
 
-#### Testing operator with OLM
+##### Testing operator with OLM
 
 To test the operator we will follow https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/
 
@@ -462,4 +863,9 @@ Note that until the `postgresql` pod is running, `backstage` and `workflow-servi
 From your fork folder of community-operators:
 * commit the changes and push them
     * you need to sign the commit: https://github.com/operator-framework/community-operators/blob/master/docs/contributing-prerequisites.md#sign-your-work
+      * use `git commit -s`
 * create a PR (see [guildines](https://github.com/operator-framework/community-operators/blob/master/docs/contributing-via-pr.md) to have the new operator version available on OperatorHub
+* Prior to create the PR you can execute the CI tests locally from the root path of the fork:
+  1. `curl -sL https://raw.githubusercontent.com/redhat-openshift-ecosystem/community-operators-pipeline/ci/latest/ci/scripts/opp.sh > opp.sh`
+  2. `sudo bash opp.sh all operators/parodos-operator/<version>`
+  3. `cat /tmp/op-test/log.out` to see the result

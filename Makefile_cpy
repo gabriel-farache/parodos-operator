@@ -16,6 +16,12 @@ ifneq ($(origin CHANNELS), undefined)
 BUNDLE_CHANNELS := --channels=$(CHANNELS)
 endif
 
+# $(curl https://operatorhub.io/api/operator?packageName=parodos-operator | jq .operator.longDescription | sed -r "s/'//g" | sed -r 's/"//g' | sed -r 's/\(/\\(/g'| sed -r 's/\)/\\)/g' | sed -r 's/\./\\./g' | sed -r 's/\//\\\//g' | sed -r 's/\\n/\\n   /g')
+define DESCR
+[Parodos]\(https:\/\/github\.com\/parodos-dev\/parodos\) is a Java toolkit to help enterprises with a legacy footprint build internal developer platforms \(IDP\) that enable their developers to get access to the tools and environments required to start coding with less time, friction and frustration\.\n    ## About this Operator\n    This Operator is based on a [Helm chart]\(https:\/\/github\.com\/parodos-dev\/parodos-operator\) for Parodos\. It supports all the parameters from the helm chart\.\n    ## Using the cluster\n    Parodos operator deploys all components needed to have a fully functionnal platform\.\n    \`\`\`\n    kubectl get pods\n    NAME READY STATUS RESTARTS AGE\n    backstage-5468f68f5b-pmfn6 1\/1 Running 2 \(54s ago\) 3m10s\n    notification-service-649656d6cb-btv4j 1\/1 Running 0 3m10s\n    postgres-7857bf5cf-vb2qj 1\/1 Running 0 3m10s\n    workflow-service-d5c4884c-t8zl4 1\/1 Running 2 \(50s ago\) 3m10s\n    \n    kubectl get service\n    NAME TYPE CLUSTER-IP EXTERNAL-IP PORT\(S\) AGE\n    backstage ClusterIP 10\.109\.227\.212 <none> 7007\/TCP 3m57s\n    notification-service ClusterIP 10\.108\.203\.52 <none> 8080\/TCP 3m57s\n    postgres ClusterIP 10\.99\.8\.76 <none> 5432\/TCP 3m57s\n    workflow-service ClusterIP 10\.103\.97\.20 <none> 8080\/TCP 3m57s\n    \`\`\`
+endef
+export DESCR
+
 # DEFAULT_CHANNEL defines the default channel used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g DEFAULT_CHANNEL = "stable")
 # To re-generate a bundle for any other default channel without changing the default setup, you can:
@@ -33,12 +39,16 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # redhat.com/parodos-operator-bundle:$VERSION and redhat.com/parodos-operator-catalog:$VERSION.
 IMAGE_TAG_BASE ?= quay.io/parodos-dev/parodos-operator
 
+LOCAL_REPO ?= quay.io/gfarache
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
 BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+
+OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
 
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
@@ -125,8 +135,6 @@ deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/c
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/default | kubectl delete -f -
 
-OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
-ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
 
 .PHONY: kustomize
 KUSTOMIZE = $(shell pwd)/bin/kustomize
@@ -134,10 +142,10 @@ kustomize: ## Download kustomize locally if necessary.
 ifeq (,$(wildcard $(KUSTOMIZE)))
 ifeq (,$(shell which kustomize 2>/dev/null))
 	@{ \
-	set -e ;\
-	mkdir -p $(dir $(KUSTOMIZE)) ;\
+	set -e
+	mkdir -p $(dir $(KUSTOMIZE))
 	curl -sSLo - https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v4.5.7/kustomize_v4.5.7_$(OS)_$(ARCH).tar.gz | \
-	tar xzf - -C bin/ ;\
+	tar xzf - -C bin/
 	}
 else
 KUSTOMIZE = $(shell which kustomize)
@@ -150,10 +158,10 @@ helm-operator: ## Download helm-operator locally if necessary, preferring the $(
 ifeq (,$(wildcard $(HELM_OPERATOR)))
 ifeq (,$(shell which helm-operator 2>/dev/null))
 	@{ \
-	set -e ;\
-	mkdir -p $(dir $(HELM_OPERATOR)) ;\
-	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.30.0/helm-operator_$(OS)_$(ARCH) ;\
-	chmod +x $(HELM_OPERATOR) ;\
+	set -e
+	mkdir -p $(dir $(HELM_OPERATOR))
+	curl -sSLo $(HELM_OPERATOR) https://github.com/operator-framework/operator-sdk/releases/download/v1.30.0/helm-operator_$(OS)_$(ARCH)
+	chmod +x $(HELM_OPERATOR)
 	}
 else
 HELM_OPERATOR = $(shell which helm-operator)
@@ -166,10 +174,10 @@ operator-sdk: ## Download operator-sdk locally if necessary.
 ifeq (,$(wildcard $(OPERATOR_SDK)))
 ifeq (, $(shell which operator-sdk 2>/dev/null))
 	@{ \
-	set -e ;\
-	mkdir -p $(dir $(OPERATOR_SDK)) ;\
-	curl -sSLo $(OPERATOR_SDK) https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_$(OS)_$(ARCH) ;\
-	chmod +x $(OPERATOR_SDK) ;\
+	set -e
+	mkdir -p $(dir $(OPERATOR_SDK))
+	curl -sSLo $(OPERATOR_SDK) https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_$(OS)_$(ARCH)
+	chmod +x $(OPERATOR_SDK)
 	}
 else
 OPERATOR_SDK = $(shell which operator-sdk)
@@ -177,11 +185,27 @@ endif
 endif
 
 .PHONY: bundle
-bundle: kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
+bundle: yq kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
+	cp -r bundle_manifests/* config/manifests/.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	$(OPERATOR_SDK) bundle validate ./bundle
+	@echo "Completing CSV..."
+	@yq -iY '.metadata.annotations.containerImage="quay.io/parodos-dev/parodos-operator:v$(PARODOS_VERSION)"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.metadata.annotations.repository="https://github.com/parodos-dev/parodos"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.metadata.annotations.categories="Modernization & Migration,Application Runtime,Developer Tools"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.metadata.namespace="parodos-operator"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.spec.icon[0].base64data="iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAADpklEQVR4nOyYT2hcRRzHvzPvz741abu7TTe2LCvWtLU1S/1TVm2RqqAgqKcKVkGlKAhVEMnBgngo4kFzKEJ78SIeRPRkixAQmqqItoYc2m40Fo3bhK6wzZ/Nn3V333sz8maTHAKuM7NJ3wvkA5OZwPx+7/slmfnNjAkAR/J25q0nrRMP77HuAEAQffhPo27x1EDtA5JJUfLXqc1XQMg9YatSh1+lD/YYmfUpPoD0UgJYYctoBxq2gHbZMBA2psrk6lPfgjtblT9CWANw50GqJdDKKIzyLzD+/gHEqyrnWomSAdibAXuL8kd48MPZBr7pTrDug/B2vQxaHoI59iXM4jkQ7innXELJQPzsIYBo1Dliib8cS+yFv/0wvOzTYOk8Guk83N3H4Px4HHThunreIPWRvLXzizc7/9CK1oRbm+DufR3unlcBaoLUbiJ24SUYlVHlXKEsYuLOwb78EZzzR4HaFLjThfrhT8GcbuVcoe5CxuQw4oMvAPUKeDyN+kP9yjlC30bp7DXELvYBnIsF7mafUYtfM2UKmKXzMCYGxNjd94ZSbCQMBFiF06LnW3rgb71POi4yBozKryAzv4uxv/0x6TilOlDPfwgeFDMVYcVzsMa/kZtb/hleYjf8VE46v5KBoAgFW54KdHpEei6ZHRM978hIx6gdJRYxSt+BzraufV73QfDE3Up5iTe/qKpDOkbLgFn8WrRW8APvw1M0ACPe7P2adEhkFnEA68yKPji1yhItA9sOiJ7OFKRjImPAT+bAUvvF4du8LrdrISoGuKjAx8VRncz8Bjp1RTo2Ega8Xa/AzzwhzkOx4ZMgYNKxoRvwdjyOxr0nxNgc+wpG+ZJSfKgG3LueR/3QGXGpoVNXYQ+fVM6hVQfaxU/0orG/D+z2R8TvdLoA5/tjIP4/yrm0DLCODFiyt+UcHks2eycNv+sB8FgXWLJ5J2bJ3PLd2iieRWzoXRBvQUeKngE397ZoMng9R0VbSbDb2Jf7YZYGdSQsc+v+hdwF0Lk/m88pEwMwbg6tSlotA/ald/632NTvfw/+zudgjpyBXfgYhLm6GluiZYCwBojf+lVt6bEqEL5W4hH2NroabBgImw0DYaO1C3nZZ8ES+1rOUXnbaQctA/6OR0WLAkoGzGufKb0YBKxWxf0vlAzYI6fXTokm634Rr38DHJB/RYog9OIN98b4JLsQthAdxif9QXEtyqRIZ/+Lt70WDMMWJQ3HRN/n1U/+DQAA///cXxHcbqTXhQAAAABJRU5ErkJggg=="' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.spec.icon[0].mediatype="image/png"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@# this sed is not needed as long as the bundle manifest is persisted in the git repo
+	@# sed -i "s/description: .*/description: |\n    $(DESCR)/g" bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.spec.customresourcedefinitions.owned[0].description="parodos CRD"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	@yq -iY '.spec.minKubeVersion="1.18.0"' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	$(eval PREVIOUS_VERSION = $(shell curl -s https://operatorhub.io/api/operator?packageName=parodos-operator | jq .operator.name))
+	@yq -iY '.spec.replaces=$(PREVIOUS_VERSION)' ./bundle/manifests/parodos-operator.clusterserviceversion.yaml
+	$(OPERATOR_SDK) bundle validate ./bundle
+	@echo "Bundle ready"
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -197,10 +221,10 @@ opm: ## Download opm locally if necessary.
 ifeq (,$(wildcard $(OPM)))
 ifeq (,$(shell which opm 2>/dev/null))
 	@{ \
-	set -e ;\
-	mkdir -p $(dir $(OPM)) ;\
-	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.23.0/$(OS)-$(ARCH)-opm ;\
-	chmod +x $(OPM) ;\
+	set -e
+	mkdir -p $(dir $(OPM))
+	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.23.0/$(OS)-$(ARCH)-opm
+	chmod +x $(OPM)
 	}
 else
 OPM = $(shell which opm)
@@ -242,7 +266,7 @@ helmify: ## Download helmify locally if necessary.
 ifeq (,$(wildcard $(HELMIFY)))
 ifeq (,$(shell which helmify 2>/dev/null))
 	@{ \
-	GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest ;\
+	GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
 	}
 else
 HELMIFY = $(shell which helmify)
@@ -256,27 +280,121 @@ download-manifest:
 
 # Generate  Helm chart via helmify
 .PHONY: generate-helmchart
-generate-helmchart: helmify
-	cat manifests.yaml | helmify helm-charts/parodos-v${PARODOS_VERSION_DNS} ;\
-	echo "fullnameOverride: parodos-v${PARODOS_VERSION_DNS}" >> helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml ;\
+generate-helmchart: yq helmify
+	cat manifests.yaml | helmify helm-charts/parodos-v${PARODOS_VERSION_DNS}
+	@echo "fullnameOverride: parodos-v${PARODOS_VERSION_DNS}" >> helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml
 	find helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/*.yaml -type f -exec sed -i "s/{{ include \"parodos-v${PARODOS_VERSION_DNS}.fullname\" . }}-//g" {} \; 
-	#sed -i 's/http:\/\/notification-service:/http:\/\/PARODOS_FULLNAME-notification-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/http:\/\/workflow-service:/http:\/\/PARODOS_FULLNAME-workflow-service:/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/host: postgres/host: PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/toYaml/replace "PARODOS_FULLNAME" .Values.fullnameOverride | toYaml/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/app-config-4gh2b9ghf4.yaml  ;\
-	#sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/notification-service-config.yaml  ;\
-	#sed -i 's/datasourceUrl/datasourceUrl | replace "PARODOS_FULLNAME" .Values.fullnameOverride/g'  helm-charts/parodos-v${PARODOS_VERSION_DNS}/templates/config.yaml  ;\
-	sed -i 's/pgdata: ""/pgdata: "\/var\/lib\/postgresql\/data\/mydata"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/postgresDb: ""/postgresDb: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/postgresPassword: ""/postgresPassword: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	sed -i 's/postgresUser: ""/postgresUser: "parodos"/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/tag: v1.0.19-openshift/tag: latest-openshift/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/postgresql:\/\/postgres/postgresql:\/\/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	#sed -i 's/$${POSTGRES_SERVICE_HOST}/PARODOS_FULLNAME-postgres/g' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml  ;\
-	chmod -R +r helm-charts ;\
+	yq -iY '.postgresSecretsTh27274644.pgdata="/var/lib/postgresql/data/mydata"' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml 
+	yq -iY '.postgresSecretsTh27274644.postgresDb="parodos"' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml 
+	yq -iY '.postgresSecretsTh27274644.postgresPassword="parodos"' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml 
+	yq -iY '.postgresSecretsTh27274644.postgresUser="parodos"' helm-charts/parodos-v${PARODOS_VERSION_DNS}/values.yaml 
+
+	chmod -R +r helm-charts
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)
 
-clean:
-	rm -rf config Dockerfile bundle.Dockerfile PROJECT watches.yaml bundle && mv Makefile Makefile_cpy && rm -rf Makefile
+clean: 
+	rm -rf helm-charts config Dockerfile bundle.Dockerfile PROJECT watches.yaml bundle manifests.yaml $(VERSION) && mv Makefile Makefile_cpy && rm -rf Makefile
+
+.PHONY: clear
+clear: kind_delete clean
+	#
+
+init: download-manifest generate-helmchart
+	$(OPERATOR_SDK) init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v$(PARODOS_VERSION_DNS)
+	cp Makefile_cpy Makefile
+
+.PHONY: kind
+KIND = $(shell pwd)/bin/kind
+kind: ## Download kind locally if necessary.
+ifeq (,$(wildcard $(KIND)))
+ifeq (,$(shell which kind 2>/dev/null))
+	@{ \
+	set -e
+	mkdir -p $(dir $(KIND))
+	curl -sSLo $(KIND) https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-$(ARCH)
+	chmod +x $(KIND)
+	}
+else
+KIND = $(shell which kind)
+endif
+endif
+
+.PHONY: yq
+yq: ## Download yq locally if necessary.
+ifeq (,$(shell which yq 2>/dev/null))
+	@{ \
+	pip install yq
+	}
+endif
+
+kind_create: kind
+ifeq (,$(shell kind get clusters | grep parodos-v$(PARODOS_VERSION_DNS)))
+	kind create cluster --name parodos-v$(PARODOS_VERSION_DNS)
+	sudo sysctl fs.inotify.max_user_watches=524288
+	sudo sysctl fs.inotify.max_user_instances=512
+endif
+
+kind_delete: kind
+ifneq (,$(shell kind get clusters | grep parodos-v$(PARODOS_VERSION_DNS)))
+	kind delete clusters parodos-v$(PARODOS_VERSION_DNS)
+endif
+
+kind_deploy: kind_create docker-build docker-push install deploy
+	@echo "Deploying Parodos operator sample..."
+	$(eval OPERATOR_NAMESPACE = $(shell echo "parodos-operator-system"))
+	$(eval LOCAL_TEST_NAMESPACE = $(shell echo "local-test"))
+	@timeout 30 bash -c 'while (( $$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $(OPERATOR_NAMESPACE) | wc -l) == 0 )); do sleep 1; done'
+	kubectl -n $(OPERATOR_NAMESPACE) wait pod/$$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $(OPERATOR_NAMESPACE)) --for=condition=Ready --timeout=60s
+	kubectl create namespace $(LOCAL_TEST_NAMESPACE) || true
+	kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml -n $(LOCAL_TEST_NAMESPACE)
+	@echo "It may take up to 5min for all pods to be ready"
+	@timeout 20 bash -c 'while (( $$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" | wc -l) == 0 )); do sleep 5; done'
+	kubectl -n $(LOCAL_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=postgres) --for=condition=Ready --timeout=300s
+	kubectl -n $(LOCAL_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=backstage) --for=condition=Ready --timeout=300s
+	kubectl -n $(LOCAL_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=workflow-service) --for=condition=Ready --timeout=300s
+	kubectl -n $(LOCAL_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=notification-service) --for=condition=Ready --timeout=300s
+	@echo "All set!"
+	@echo "Run 'kubectl -n $(LOCAL_TEST_NAMESPACE) port-forward $$(kubectl get pods -n $(LOCAL_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=backstage) 7007:7007 &' to access backstage UI"
+
+
+test_deploy:
+	@echo "Make sure you ran 'kubectl port-forward $$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -l app=backstage) 7007:7007 &' before..."
+ifeq ($(shell curl -Is --retry 5 --retry-connrefused --retry-delay 1 http://localhost:7007/parodos -H "Authorization: Basic dGVzdDp0ZXN0" | head -n 1),HTTP/1.1 200 OK)
+	@echo "Parodos UI is working"
+else 
+	@echo "Parodos UI is not working"
+	exit 1
+endif
+
+prepare_push_to_operatorhub: kind_create
+ifeq ($(wildcard $(VERSION)),)
+	mkdir $(VERSION)
+endif
+	$(eval BUNDLE_TEST_NAMESPACE = $(shell echo "operator-bundle-test"))
+	cp -r bundle/* $(VERSION)/.
+	cp bundle.Dockerfile $(VERSION)/.
+	sed -i 's/bundle\///g' $(VERSION)/bundle.Dockerfile
+	operator-sdk bundle validate $(VERSION) --select-optional suite=operatorframework || operator-sdk bundle validate $(VERSION) --select-optional suite=operatorframework
+	operator-sdk scorecard $(VERSION) || true
+	kubectl delete pods -l app=scorecard-test
+	docker build -f $(VERSION)/bundle.Dockerfile -t $(LOCAL_REPO)/parodos:v$(VERSION) $(VERSION)/
+	docker push $(LOCAL_REPO)/parodos:v$(VERSION)
+	operator-sdk olm uninstall || true
+	operator-sdk olm install
+	@sleep 2
+	operator-sdk run bundle $(LOCAL_REPO)/parodos:v$(VERSION)
+	@sleep 2
+	@timeout 30 bash -c 'while (( $$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep parodos-operator-controller-manager | wc -l) == 0 )); do sleep 1; done'
+	kubectl  wait pod/$$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep parodos-operator-controller-manager) --for=condition=Ready --timeout=300s
+	kubectl create namespace $(BUNDLE_TEST_NAMESPACE) || true
+	kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml -n $(BUNDLE_TEST_NAMESPACE)
+	@echo "It may take up to 5min for all pods to be ready"
+	kubectl -n $(BUNDLE_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(BUNDLE_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=postgres | head -n 1) --for=condition=Ready --timeout=300s
+	kubectl -n $(BUNDLE_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(BUNDLE_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=backstage | head -n 1) --for=condition=Ready --timeout=300s
+	kubectl -n $(BUNDLE_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(BUNDLE_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=workflow-service | head -n 1) --for=condition=Ready --timeout=300s
+	kubectl -n $(BUNDLE_TEST_NAMESPACE) wait pod/$$(kubectl get pods -n $(BUNDLE_TEST_NAMESPACE) --no-headers -o custom-columns=":metadata.name" -l app=notification-service | head -n 1) --for=condition=Ready --timeout=300s
+
+	@echo "Operator bundle prepared and tested successfuly!"
+	@echo "You can now copy $(VERSION) folder into operators/parodos-operator of your fork of https://github.com/k8s-operatorhub/community-operators"
