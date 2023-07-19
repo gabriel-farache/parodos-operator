@@ -1,0 +1,70 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: parodos-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: |
+    [Parodos](https://github.com/parodos-dev/parodos) is a Java toolkit to help enterprises with a legacy footprint build internal developer platforms (IDP) that enable their developers to get access to the tools and environments required to start coding with less time, friction and frustration.
+    ## About this Operator
+    This Operator is based on a [Helm chart](https://github.com/parodos-dev/parodos-operator) for Parodos. It supports all the parameters from the helm chart.
+    ## Using the cluster
+    Parodos operator deploys all components needed to have a fully functionnal platform.
+    ```
+    kubectl get pods
+    NAME READY STATUS RESTARTS AGE
+    backstage-5468f68f5b-pmfn6 1/1 Running 2 (54s ago) 3m10s
+    notification-service-649656d6cb-btv4j 1/1 Running 0 3m10s
+    postgres-7857bf5cf-vb2qj 1/1 Running 0 3m10s
+    workflow-service-d5c4884c-t8zl4 1/1 Running 2 (50s ago) 3m10s
+
+    kubectl get service
+    NAME TYPE CLUSTER-IP EXTERNAL-IP PORT(S) AGE
+    backstage ClusterIP 10.109.227.212 <none> 7007/TCP 3m57s
+    notification-service ClusterIP 10.108.203.52 <none> 8080/TCP 3m57s
+    postgres ClusterIP 10.99.8.76 <none> 5432/TCP 3m57s
+    workflow-service ClusterIP 10.103.97.20 <none> 8080/TCP 3m57s
+    ```
+  displayName: Parodos Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - parodos
+  - postgresql
+  - backstage
+  links:
+  - name: Parodos Operator
+    url: https://parodos-operator.domain
+  maintainers:
+  - email: gfarache@redhat.com
+    name: gabriel
+  - email: gciavarr@redhat.com
+    name: gloria
+  - email: ricwang@redhat.com
+    name: richard
+  - email: aketcha@redhat.com
+    name: annel
+  maturity: alpha
+  provider:
+    name: parodos-dev
+    url: https://github.com/parodos-dev
+  version: 0.0.0
