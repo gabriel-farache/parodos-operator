@@ -73,16 +73,6 @@ docker build -t quay.io/parodos-dev/parodos-operator:v1.0.19 .
  => => exporting layers                                                                                                                                 0.0s
  => => writing image sha256:b7aef943fdf67bd166c41c2a3a1038a5e4806c104a11f3dd25df30d055ba0c84                                                            0.0s
  => => naming to quay.io/parodos-dev/parodos-operator:v1.0.19                                                                                           0.0s
-docker push quay.io/parodos-dev/parodos-operator:v1.0.19
-The push refers to repository [quay.io/parodos-dev/parodos-operator]
-5f70bf18a086: Layer already exists 
-784e9b92b0c0: Layer already exists 
-cf8333ebf2f5: Layer already exists 
-9c9e5071d24a: Layer already exists 
-f10ab75b4fc1: Layer already exists 
-0d5fc27d682c: Layer already exists 
-14946186767b: Layer already exists 
-v1.0.19: digest: sha256:f03e402213488b44e2279210177541fc2b0e737f2661596537b98961439fe0dc size: 1776
 /home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize build config/crd | kubectl apply -f -
 customresourcedefinition.apiextensions.k8s.io/parodos.charts.redhat.com created
 cd config/manager && /home/gabriel/git/parados_stuff/parodos-operator/bin/kustomize edit set image controller=quay.io/parodos-dev/parodos-operator:v1.0.19
@@ -119,11 +109,27 @@ All set!
 Run 'kubectl -n local-test port-forward backstage-7f78dbdc5f-6jz45 7007:7007 &' to access backstage UId
 ```
 
+Then once validated, you can release the version in the official repo by pushing the image: 
+```bash
+make docker-push
+docker push quay.io/parodos-dev/parodos-operator:v1.0.19
+The push refers to repository [quay.io/parodos-dev/parodos-operator]
+5f70bf18a086: Layer already exists 
+784e9b92b0c0: Layer already exists 
+cf8333ebf2f5: Layer already exists 
+9c9e5071d24a: Layer already exists 
+f10ab75b4fc1: Layer already exists 
+0d5fc27d682c: Layer already exists 
+14946186767b: Layer already exists 
+v1.0.19: digest: sha256:f03e402213488b44e2279210177541fc2b0e737f2661596537b98961439fe0dc size: 1776
+```
+
+
 or follow the step by step instructions
 ### Multiple targets
-To push the docker image
+To push the docker image to the remote repo (release)
 ```bash
-make docker-build docker-push
+make docker-build
 ```
 
 Let's create a local K8S cluster with minikube:
@@ -186,6 +192,21 @@ To test, you can also run
 ```bash
 kubectl port-forward backstage-7f78dbdc5f-dr5cl 7007:7007 &
 make test_deploy
+```
+
+Then once validated, you can release the version in the official repo by pushing the image: 
+```bash
+make docker-push
+docker push quay.io/parodos-dev/parodos-operator:v1.0.19
+The push refers to repository [quay.io/parodos-dev/parodos-operator]
+5f70bf18a086: Layer already exists 
+784e9b92b0c0: Layer already exists 
+cf8333ebf2f5: Layer already exists 
+9c9e5071d24a: Layer already exists 
+f10ab75b4fc1: Layer already exists 
+0d5fc27d682c: Layer already exists 
+14946186767b: Layer already exists 
+v1.0.19: digest: sha256:f03e402213488b44e2279210177541fc2b0e737f2661596537b98961439fe0dc size: 1776
 ```
 
 ## Push to OperatorHub

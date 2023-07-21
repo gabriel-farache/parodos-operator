@@ -339,7 +339,7 @@ ifneq (,$(shell kind get clusters | grep parodos-v$(PARODOS_VERSION_DNS)))
 	kind delete clusters parodos-v$(PARODOS_VERSION_DNS)
 endif
 
-kind_deploy: kind_create docker-build docker-push install deploy
+kind_deploy: kind_create docker-build install deploy
 	@echo "Deploying Parodos operator sample..."
 	$(eval OPERATOR_NAMESPACE = $(shell echo "parodos-operator-system"))
 	$(eval LOCAL_TEST_NAMESPACE = $(shell echo "local-test"))
