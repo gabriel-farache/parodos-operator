@@ -22,3 +22,4 @@ watches.yaml
 config
 0.*
 1.*
+helm-charts

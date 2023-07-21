@@ -2,27 +2,51 @@
 
 
 ## Creation
-You can either do
+When you want to delete it
+You can either run `make -f Makefile_reference init` to create the helm charts from the manifests and initiliaze the helm operator 
 ```bash
-make -f Makefile_cpy init
+$ make -f Makefile_reference init
+curl -LO https://github.com/parodos-dev/parodos/releases/download/v1.0.19/manifests.yaml
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 10040  100 10040    0     0  34476      0 --:--:-- --:--:-- --:--:-- 34476
+cat manifests.yaml | helmify helm-charts/parodos-v1-0-19
+find helm-charts/parodos-v1-0-19/templates/*.yaml -type f -exec sed -i "s/{{ include \"parodos-v1-0-19.fullname\" . }}-//g" {} \; 
+yq -iY '.postgresSecretsTh27274644.pgdata="/var/lib/postgresql/data/mydata"' helm-charts/parodos-v1-0-19/values.yaml 
+yq -iY '.postgresSecretsTh27274644.postgresDb="parodos"' helm-charts/parodos-v1-0-19/values.yaml 
+yq -iY '.postgresSecretsTh27274644.postgresPassword="parodos"' helm-charts/parodos-v1-0-19/values.yaml 
+yq -iY '.postgresSecretsTh27274644.postgresUser="parodos"' helm-charts/parodos-v1-0-19/values.yaml 
+chmod -R +r helm-charts
+/usr/local/bin/operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
+Writing kustomize manifests for you to edit...
+Creating the API:
+$ /usr/local/bin/operator-sdk create api --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
+Writing kustomize manifests for you to edit...
+Created helm-charts/parodos-v1-0-19
+Generating RBAC rules
+WARN[0000] The RBAC rules generated in config/rbac/role.yaml are based on the chart's default manifest. Some rules may be missing for resources that are only enabled with custom values, and some existing rules may be overly broad. Double check the rules generated in config/rbac/role.yaml to ensure they meet the operator's permission requirements. 
+cp Makefile_reference Makefile
 ```
 
-Or 
+Or the following manual steps.
+
+### Manual steps
 
 ```bash
- make -f Makefile_cpy download-manifest generate-helmchart 
+$ make -f Makefile_reference download-manifest generate-helmchart 
 ```
 
 Please note that the parodos version is hold by the parameters `PARODOS_VERSION` and `PARODOS_VERSION_DNS` in the `Makefile` file.
 
 This will create the folder helm-charts/parodos-{PARODOS_VERSION_DNS}. We have to DNSify the name to avoid error while deploying the operator.
 
-`generate-helmchart` target is remplacing strings in templates and `values.yaml` and adding `read` rights to the `helm-charts` folder, to change this behaviour take a look in the `Makefile` and `Makefile_cpy` files. 
-`Makefile_cpy` is used to replace the generated `Makefile` when initializing the operator (see below)
+`generate-helmchart` target is replacing strings in templates and `values.yaml` and it is also granting `read` rights to the `helm-charts` folder, to change this behaviour take a look in the `Makefile` and `Makefile_reference` files. 
+`Makefile_reference` is used to replace the generated `Makefile` when initializing the operator (see below)
 
-Then, 
+Then initialize the helm chart by executing `perator-sdk init --plugins helm --domain redhat.com --kind `
 ```bash
-$ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19 && cp Makefile_cpy Makefile
+$ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19 && cp Makefile_reference Makefile
     Writing kustomize manifests for you to edit...
     Creating the API:
     $ operator-sdk create api --kind Parodos --helm-chart helm-charts/parodos-v1-0-19
@@ -33,7 +57,10 @@ $ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-cha
 ```
 
 ## Deploy
-### Single target
+The target `kind_create` creates a local K8S cluster with Kind. It uses the `PARODOS_VERSION_DNS` to set the cluster's name. It is run when executing `make kind_deploy`.
+The target `kind_delete` deletes this local cluster.
+
+### Quick deploy
 You can either execute `make kind_deploy`
 ```bash
 $ make kind_deploy
@@ -111,7 +138,7 @@ Run 'kubectl -n local-test port-forward backstage-7f78dbdc5f-6jz45 7007:7007 &' 
 
 Then once validated, you can release the version in the official repo by pushing the image: 
 ```bash
-make docker-push
+$ make docker-push
 docker push quay.io/parodos-dev/parodos-operator:v1.0.19
 The push refers to repository [quay.io/parodos-dev/parodos-operator]
 5f70bf18a086: Layer already exists 
@@ -124,15 +151,14 @@ f10ab75b4fc1: Layer already exists
 v1.0.19: digest: sha256:f03e402213488b44e2279210177541fc2b0e737f2661596537b98961439fe0dc size: 1776
 ```
 
-
 or follow the step by step instructions
-### Multiple targets
+### Manual deploy
 To push the docker image to the remote repo (release)
 ```bash
-make docker-build
+$ make docker-build
 ```
 
-Let's create a local K8S cluster with minikube:
+Let's create a local K8S cluster with Kind:
 ```bash
 $ make kind_create 
 kind create cluster --name parodos-v1-0-19
@@ -153,24 +179,24 @@ Have a nice day! 👋
 
 Then, 
 ```bash
-make install deploy
+$ make install deploy
 ```
 
-Check the parodos-operator-controller-manager is running:
+Check the `parodos-operator-controller-manager` is running:
 ```bash
-kubectl -n parodos-operator-system get pods
+$ kubectl -n parodos-operator-system get pods
 NAME                                                   READY   STATUS    RESTARTS   AGE
 parodos-operator-controller-manager-68f776c5fb-nvl2t   2/2     Running   0          19m
 ```
 
 Once it is running, you can deploy the sample (here in the `default` namespace):
 ```bash
-kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml
+$ kubectl apply -f config/samples/charts_v1alpha1_parodos.yaml
 ```
 
 Wait until the pods are up and running. It may take some times and some restarts as the posgresql needs to be available before anything else can start
 ```bash
-kubectl get pods
+$ kubectl get pods
 NAME                                    READY   STATUS    RESTARTS      AGE
 backstage-5468f68f5b-pmfn6              1/1     Running   2 (54s ago)   3m10s
 notification-service-649656d6cb-btv4j   1/1     Running   0             3m10s
@@ -180,7 +206,7 @@ workflow-service-d5c4884c-t8zl4         1/1     Running   2 (50s ago)   3m10s
 
 Now we can port forward the backstage port (`7007` by default) in order to access it from `localhost`:
 ```bash
-kubectl port-forward parodos-backstage-7f46f49fb9-n4gx2 7007:7007 &
+$ kubectl port-forward parodos-backstage-7f46f49fb9-n4gx2 7007:7007 &
 Forwarding from 127.0.0.1:7007 -> 7007
 Forwarding from [::1]:7007 -> 7007
 Handling connection for 7007
@@ -190,13 +216,13 @@ You should be able to access `http://localhost:7007/` with `test/test` credentia
 
 To test, you can also run
 ```bash
-kubectl port-forward backstage-7f78dbdc5f-dr5cl 7007:7007 &
-make test_deploy
+$ kubectl port-forward backstage-7f78dbdc5f-dr5cl 7007:7007 &
+$ make test_deploy
 ```
 
 Then once validated, you can release the version in the official repo by pushing the image: 
 ```bash
-make docker-push
+$ make docker-push
 docker push quay.io/parodos-dev/parodos-operator:v1.0.19
 The push refers to repository [quay.io/parodos-dev/parodos-operator]
 5f70bf18a086: Layer already exists 
@@ -235,7 +261,7 @@ INFO[0000] All validation tests have completed successfully
 Bundle ready
 ```
 
-Note that you are not prompted anything as the requested values are already saved in `bundle_manifests` folder and that folder is automatically moved into `config/manifests`.
+Please be aware that no prompts will appear as the requested values are already saved in the `bundle_manifests` folder, which will be automatically moved.
 
 The `bundle` target is also doing the following automatically, no need to do it, it's kept there in order to keep history.
 
@@ -284,9 +310,12 @@ repository: https://github.com/parodos-dev/parodos
 
 ### Prepare the operator
 
-You can now fork https://github.com/k8s-operatorhub/community-operators then
+You can now fork https://github.com/k8s-operatorhub/community-operators. To fork the repo, if you have the github CLI installed and configured you can run `https://github.com/k8s-operatorhub/community-operators`
+
+Then
 * create a new folder in `operators/parodos-operator` with the new operator's version as name (ie: 0.0.1)
 * copy the folder `bundle` and the file `bundle.Dockerfile` previously generated into the newly created folder
+  * you do not need to do that if you run the [quick test](#quick-testing) as a new folder folr the `VERSION` will be created with all the files needed
 
 ### Testing the operator
 
@@ -294,10 +323,15 @@ You can now test it by following: https://k8s-operatorhub.github.io/community-op
 
 Here we will mostly leverage `operator sdk`
 
-You can either run `make prepare_push_to_operatorhub` from this repo and then copy the generated folder into your fork or follow the step by step instructions below.
+You can either run `make prepare_push_to_operatorhub` from this repo and then copy the generated folder into your fork. At the end of this section you will then copy the generated folder into operators/parodos-operator of your fork.
+Or you can follow the [step by step instructions](#step-by-step).
+
+#### Quick testing
+
+/!\ Remember to either set `LOCAL_REPO` with you own repo in the makefile or override it while executing the target.
 
 ```bash
-$ make prepare_push_to_operatorhub
+$ LOCAL_REPO=quay.io/gfarache make prepare_push_to_operatorhub
 cp -r bundle/* 0.0.3/.
 cp bundle.Dockerfile 0.0.3/.
 sed -i 's/bundle\///g' 0.0.3/bundle.Dockerfile
@@ -581,6 +615,10 @@ pod/notification-service-64bc65f7c9-lstxs condition met
 Operator bundle prepared and tested successfuly!
 You can now copy 0.0.3 folder into operators/parodos-operator of your fork of https://github.com/k8s-operatorhub/community-operators
 ```
+
+You can now copy the generated folder into operators/parodos-operator of your fork of https://github.com/k8s-operatorhub/community-operators
+
+
 #### Step by step
 
 ##### Static tests
@@ -588,7 +626,7 @@ You can now copy 0.0.3 folder into operators/parodos-operator of your fork of ht
 From your fork folder of community-operators, in operators/parodos-operator/\<version\>: (here version = 0.0.2)
 
 ```bash
-operator-sdk bundle validate . --select-optional suite=operatorframework
+$ operator-sdk bundle validate . --select-optional suite=operatorframework
 INFO[0000] All validation tests have completed successfully 
 ```
 
@@ -747,7 +785,7 @@ Start by generating the bundle image: from your fork folder of community-operato
 /!\ Remember to change the quay repository to one you have pull and push rights.
  
 ```bash
-docker build -f 0.0.2/bundle.Dockerfile -t quay.io/gfarache/parodos:v0.0.2 0.0.2/
+$ docker build -f 0.0.2/bundle.Dockerfile -t quay.io/gfarache/parodos:v0.0.2 0.0.2/
 [+] Building 0.1s (7/7) FINISHED                                                                                                                                        
  => [internal] load build definition from bundle.Dockerfile                                                                                                        0.0s
  => => transferring dockerfile: 954B                                                                                                                               0.0s

@@ -295,7 +295,7 @@ helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)
 
 clean: 
-	rm -rf helm-charts config Dockerfile bundle.Dockerfile PROJECT watches.yaml bundle manifests.yaml $(VERSION) && mv Makefile Makefile_cpy && rm -rf Makefile
+	rm -rf helm-charts config Dockerfile bundle.Dockerfile PROJECT watches.yaml bundle manifests.yaml $(VERSION) && mv Makefile Makefile_reference && rm -rf Makefile
 
 .PHONY: clear
 clear: kind_delete clean
@@ -303,7 +303,7 @@ clear: kind_delete clean
 
 init: download-manifest generate-helmchart
 	$(OPERATOR_SDK) init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v$(PARODOS_VERSION_DNS)
-	cp Makefile_cpy Makefile
+	cp Makefile_reference Makefile
 
 .PHONY: kind
 KIND = $(shell pwd)/bin/kind
