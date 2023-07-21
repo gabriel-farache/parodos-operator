@@ -324,9 +324,7 @@ endif
 .PHONY: yq
 yq: ## Download yq locally if necessary.
 ifeq (,$(shell which yq 2>/dev/null))
-	@{ \
-	pip install yq
-	}
+	@pip install yq
 endif
 
 kind_create: kind
