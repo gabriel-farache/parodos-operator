@@ -44,7 +44,7 @@ This will create the folder helm-charts/parodos-{PARODOS_VERSION_DNS}. We have t
 `generate-helmchart` target is replacing strings in templates and `values.yaml` and it is also granting `read` rights to the `helm-charts` folder, to change this behaviour take a look in the `Makefile` and `Makefile_reference` files. 
 `Makefile_reference` is used to replace the generated `Makefile` when initializing the operator (see below)
 
-Then initialize the helm chart by executing `perator-sdk init --plugins helm --domain redhat.com --kind `
+Then initialize the helm chart by executing `operator-sdk init --plugins helm --domain redhat.com --kind `
 ```bash
 $ operator-sdk init --plugins helm --domain redhat.com --kind Parodos --helm-chart helm-charts/parodos-v1-0-19 && cp Makefile_reference Makefile
     Writing kustomize manifests for you to edit...
